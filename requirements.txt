@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+aiortc
+opencv-python-headless
+ultralytics
+python-multipart

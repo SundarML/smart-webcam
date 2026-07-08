@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Broadcast - Smartphone Bodycam</title>
+<style>
+  body { font-family: sans-serif; background: #111; color: #eee; margin: 0; padding: 1rem; }
+  video { width: 100%; max-width: 480px; background: #000; border-radius: 8px; }
+  select, button { font-size: 1.1rem; padding: 0.5rem; margin: 0.5rem 0; }
+  #status { margin-top: 1rem; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+  <h1>Broadcast</h1>
+  <label for="model">Model</label><br>
+  <select id="model">
+    <option value="ppe" selected>PPE</option>
+    <option value="fire">Fire / Smoke</option>
+    <option value="both">Both</option>
+  </select>
+  <br>
+  <button id="start">Start Broadcast</button>
+  <br>
+  <video id="preview" autoplay playsinline muted></video>
+  <div id="status">Idle.</div>
+
+<script>
+const statusEl = document.getElementById("status");
+const startBtn = document.getElementById("start");
+const modelSelect = document.getElementById("model");
+const preview = document.getElementById("preview");
+
+function log(msg) {
+  statusEl.textContent = msg;
+}
+
+async function start() {
+  startBtn.disabled = true;
+  modelSelect.disabled = true;
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false,
+    });
+  } catch (err) {
+    log("Camera access failed: " + err);
+    startBtn.disabled = false;
+    modelSelect.disabled = false;
+    return;
+  }
+  preview.srcObject = stream;
+
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  });
+  stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+  const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/signal`);
+
+  ws.onopen = async () => {
+    ws.send(JSON.stringify({ type: "hello", model: modelSelect.value }));
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    if (pc.iceGatheringState !== "complete") {
+      await new Promise((resolve) => {
+        function check() {
+          if (pc.iceGatheringState === "complete") {
+            pc.removeEventListener("icegatheringstatechange", check);
+            resolve();
+          }
+        }
+        pc.addEventListener("icegatheringstatechange", check);
+        setTimeout(resolve, 3000);
+      });
+    }
+
+    ws.send(JSON.stringify({ type: "offer", sdp: pc.localDescription.sdp }));
+    log("Offer sent, waiting for answer...");
+  };
+
+  ws.onmessage = async (event) => {
+    const message = JSON.parse(event.data);
+    if (message.type === "answer") {
+      await pc.setRemoteDescription({ type: "answer", sdp: message.sdp });
+      log("Connected. Broadcasting.");
+    } else if (message.type === "error") {
+      log("Server error: " + message.message);
+      ws.close();
+    }
+  };
+
+  ws.onclose = () => log("Signaling connection closed.");
+  ws.onerror = () => log("Signaling connection error.");
+
+  pc.onconnectionstatechange = () => log("Connection state: " + pc.connectionState);
+}
+
+startBtn.addEventListener("click", start);
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+venv/
+yolov8n.pt
+__pycache__/
+*.pyc
+.git/

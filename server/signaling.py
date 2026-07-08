@@ -8,6 +8,15 @@ from .state import DEFAULT_MODEL_MODE, state
 from .webrtc_session import build_peer_connection, wait_for_ice_gathering_complete
 
 
+def _log_candidates(label: str, sdp: str) -> None:
+    lines = [line for line in sdp.splitlines() if line.startswith("a=candidate")]
+    if not lines:
+        print(f"[webrtc] {label}: no candidates in SDP")
+        return
+    for line in lines:
+        print(f"[webrtc] {label}: {line}")
+
+
 async def handle_signaling(websocket: WebSocket) -> None:
     await websocket.accept()
 
@@ -33,10 +42,12 @@ async def handle_signaling(websocket: WebSocket) -> None:
 
             elif msg_type == "offer":
                 offer = RTCSessionDescription(sdp=message["sdp"], type="offer")
+                _log_candidates("offer (client)", offer.sdp)
                 await pc.setRemoteDescription(offer)
                 answer = await pc.createAnswer()
                 await pc.setLocalDescription(answer)
                 await wait_for_ice_gathering_complete(pc)
+                _log_candidates("answer (server)", pc.localDescription.sdp)
                 await websocket.send_json({"type": "answer", "sdp": pc.localDescription.sdp})
 
             elif msg_type == "bye":

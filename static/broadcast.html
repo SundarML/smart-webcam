@@ -53,26 +53,20 @@ async function start() {
   }
   preview.srcObject = stream;
 
-  const pc = new RTCPeerConnection({
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      {
-        urls: "turn:openrelay.metered.ca:80",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-      {
-        urls: ["turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"],
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-      {
-        urls: "turns:openrelay.metered.ca:443?transport=tcp",
-        username: "openrelayproject",
-        credential: "openrelayproject",
-      },
-    ],
-  });
+  log("Fetching TURN credentials...");
+  let iceServers;
+  try {
+    const resp = await fetch("/ice-servers");
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    ({ iceServers } = await resp.json());
+  } catch (err) {
+    log("Failed to fetch ICE servers: " + err);
+    startBtn.disabled = false;
+    modelSelect.disabled = false;
+    return;
+  }
+
+  const pc = new RTCPeerConnection({ iceServers });
   stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
   const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/signal`);

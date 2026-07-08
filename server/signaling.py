@@ -25,7 +25,7 @@ async def handle_signaling(websocket: WebSocket) -> None:
         await websocket.close()
         return
 
-    pc = build_peer_connection()
+    pc = await build_peer_connection()
     try:
         async for raw in websocket.iter_text():
             message = json.loads(raw)

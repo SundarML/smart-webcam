@@ -7,34 +7,18 @@ from aiortc.mediastreams import MediaStreamError
 from . import inference
 from .frame_bus import frame_bus
 from .state import state
-
-# Public test TURN service (Open Relay Project) — needed because a phone
-# behind carrier-grade NAT often can't establish a direct/STUN-only ICE path
-# to a PaaS container, which typically has no reachable public UDP port either.
-ICE_SERVERS = [
-    RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
-    RTCIceServer(
-        urls=["turn:openrelay.metered.ca:80"],
-        username="openrelayproject",
-        credential="openrelayproject",
-    ),
-    RTCIceServer(
-        urls=["turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"],
-        username="openrelayproject",
-        credential="openrelayproject",
-    ),
-    RTCIceServer(
-        urls=["turns:openrelay.metered.ca:443?transport=tcp"],
-        username="openrelayproject",
-        credential="openrelayproject",
-    ),
-]
+from .turn_credentials import get_ice_servers
 
 _executor = ThreadPoolExecutor(max_workers=1)
 
 
-def build_peer_connection() -> RTCPeerConnection:
-    pc = RTCPeerConnection(configuration=RTCConfiguration(iceServers=ICE_SERVERS))
+async def build_peer_connection() -> RTCPeerConnection:
+    raw_ice_servers = await asyncio.to_thread(get_ice_servers)
+    ice_servers = [
+        RTCIceServer(urls=s["urls"], username=s.get("username"), credential=s.get("credential"))
+        for s in raw_ice_servers
+    ]
+    pc = RTCPeerConnection(configuration=RTCConfiguration(iceServers=ice_servers))
 
     @pc.on("track")
     def on_track(track) -> None:

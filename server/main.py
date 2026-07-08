@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .frame_bus import frame_bus
 from .signaling import handle_signaling
+from .turn_credentials import get_ice_servers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
@@ -37,6 +38,11 @@ async def broadcast_page() -> FileResponse:
 @app.get("/view")
 async def view_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "view.html")
+
+
+@app.get("/ice-servers")
+async def ice_servers() -> dict:
+    return {"iceServers": get_ice_servers()}
 
 
 @app.websocket("/ws/signal")

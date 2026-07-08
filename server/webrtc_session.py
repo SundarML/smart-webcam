@@ -1,4 +1,5 @@
 import asyncio
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection
@@ -60,13 +61,15 @@ async def _consume_video(track) -> None:
     loop = asyncio.get_event_loop()
     inference_busy = False
 
-    def _on_inference_done(fut: "asyncio.Future") -> None:
+    def _on_inference_done(fut: "asyncio.Future", started_at: float) -> None:
         nonlocal inference_busy
         inference_busy = False
+        elapsed = time.monotonic() - started_at
         exc = fut.exception()
         if exc is not None:
-            print(f"Inference error: {exc!r}")
+            print(f"[webrtc] Inference error after {elapsed:.2f}s: {exc!r}")
             return
+        print(f"[webrtc] frame processed in {elapsed:.2f}s")
         frame_bus.publish(fut.result())
 
     while True:
@@ -81,5 +84,6 @@ async def _consume_video(track) -> None:
         inference_busy = True
         img = frame.to_ndarray(format="bgr24")
         mode = state.get_model_mode()
+        started_at = time.monotonic()
         future = loop.run_in_executor(_executor, inference.run, img, mode)
-        future.add_done_callback(_on_inference_done)
+        future.add_done_callback(lambda fut: _on_inference_done(fut, started_at))

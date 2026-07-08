@@ -8,7 +8,22 @@ from . import inference
 from .frame_bus import frame_bus
 from .state import state
 
-ICE_SERVERS = [RTCIceServer(urls=["stun:stun.l.google.com:19302"])]
+# Public test TURN service (Open Relay Project) — needed because a phone
+# behind carrier-grade NAT often can't establish a direct/STUN-only ICE path
+# to a PaaS container, which typically has no reachable public UDP port either.
+ICE_SERVERS = [
+    RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
+    RTCIceServer(
+        urls=["turn:openrelay.metered.ca:80"],
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
+    RTCIceServer(
+        urls=["turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"],
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
+]
 
 _executor = ThreadPoolExecutor(max_workers=1)
 
@@ -18,13 +33,19 @@ def build_peer_connection() -> RTCPeerConnection:
 
     @pc.on("track")
     def on_track(track) -> None:
+        print(f"[webrtc] track received: kind={track.kind}")
         if track.kind == "video":
             asyncio.ensure_future(_consume_video(track))
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange() -> None:
+        print(f"[webrtc] connectionState={pc.connectionState}")
         if pc.connectionState in ("failed", "closed", "disconnected"):
             await pc.close()
+
+    @pc.on("iceconnectionstatechange")
+    async def on_iceconnectionstatechange() -> None:
+        print(f"[webrtc] iceConnectionState={pc.iceConnectionState}")
 
     return pc
 

@@ -54,7 +54,19 @@ async function start() {
   preview.srcObject = stream;
 
   const pc = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "turn:openrelay.metered.ca:80",
+        username: "openrelayproject",
+        credential: "openrelayproject",
+      },
+      {
+        urls: ["turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp"],
+        username: "openrelayproject",
+        credential: "openrelayproject",
+      },
+    ],
   });
   stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
@@ -98,6 +110,7 @@ async function start() {
   ws.onerror = () => log("Signaling connection error.");
 
   pc.onconnectionstatechange = () => log("Connection state: " + pc.connectionState);
+  pc.oniceconnectionstatechange = () => log("ICE state: " + pc.iceConnectionState);
 }
 
 startBtn.addEventListener("click", start);

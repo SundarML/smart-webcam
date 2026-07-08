@@ -66,6 +66,11 @@ async function start() {
         username: "openrelayproject",
         credential: "openrelayproject",
       },
+      {
+        urls: "turns:openrelay.metered.ca:443?transport=tcp",
+        username: "openrelayproject",
+        credential: "openrelayproject",
+      },
     ],
   });
   stream.getTracks().forEach((track) => pc.addTrack(track, stream));

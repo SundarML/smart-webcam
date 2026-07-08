@@ -23,6 +23,11 @@ ICE_SERVERS = [
         username="openrelayproject",
         credential="openrelayproject",
     ),
+    RTCIceServer(
+        urls=["turns:openrelay.metered.ca:443?transport=tcp"],
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
 ]
 
 _executor = ThreadPoolExecutor(max_workers=1)

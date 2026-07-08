@@ -50,7 +50,7 @@ def build_peer_connection() -> RTCPeerConnection:
     return pc
 
 
-async def wait_for_ice_gathering_complete(pc: RTCPeerConnection, timeout: float = 3.0) -> None:
+async def wait_for_ice_gathering_complete(pc: RTCPeerConnection, timeout: float = 10.0) -> None:
     if pc.iceGatheringState == "complete":
         return
 
@@ -64,7 +64,7 @@ async def wait_for_ice_gathering_complete(pc: RTCPeerConnection, timeout: float 
     try:
         await asyncio.wait_for(done.wait(), timeout=timeout)
     except asyncio.TimeoutError:
-        pass
+        print(f"[webrtc] ICE gathering timed out after {timeout}s, state={pc.iceGatheringState}")
 
 
 async def _consume_video(track) -> None:

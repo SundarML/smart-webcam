@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smartphone Bodycam</title>
+<style>
+  body { font-family: sans-serif; background: #111; color: #eee; margin: 0; padding: 1.5rem; max-width: 640px; }
+  h1 { margin-top: 0; }
+  .card { background: #1c1c1c; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .card h2 { margin-top: 0; }
+  .card a.button {
+    display: inline-block; margin-top: 0.5rem; padding: 0.6rem 1.2rem;
+    background: #3a7afe; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold;
+  }
+  .note { color: #999; font-size: 0.9rem; }
+  ol { padding-left: 1.2rem; }
+</style>
+</head>
+<body>
+  <h1>Smartphone Bodycam</h1>
+  <p>This demo streams live video from a phone's camera to this server, which runs real-time object detection (PPE / fire &amp; smoke) and shows the annotated feed to anyone watching.</p>
+
+  <div class="card">
+    <h2>📱 Broadcast (phone with the camera)</h2>
+    <ol>
+      <li>Open the <strong>Broadcast</strong> link below on the phone that will act as the camera.</li>
+      <li>Choose a detection model (PPE, Fire/Smoke, or Both).</li>
+      <li>Tap "Start Broadcast" and allow camera access when prompted.</li>
+    </ol>
+    <a class="button" href="/broadcast">Go to Broadcast</a>
+    <p class="note">Only one phone can broadcast at a time.</p>
+  </div>
+
+  <div class="card">
+    <h2>🖥️ View (anyone watching)</h2>
+    <p>Open the <strong>View</strong> link below to watch the live annotated feed. No camera or special permissions needed — this works on any device, including a laptop or a second phone.</p>
+    <a class="button" href="/view">Go to View</a>
+  </div>
+
+  <p class="note">Nothing shows up on View until a broadcast is active.</p>
+</body>
+</html>

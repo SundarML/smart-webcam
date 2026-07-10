@@ -3,6 +3,7 @@ import json
 from aiortc import RTCSessionDescription
 from fastapi import WebSocket, WebSocketDisconnect
 
+from . import auth
 from .inference import MODEL_MODES
 from .state import DEFAULT_MODEL_MODE, state
 from .webrtc_session import build_peer_connection, wait_for_ice_gathering_complete
@@ -19,6 +20,11 @@ def _log_candidates(label: str, sdp: str) -> None:
 
 async def handle_signaling(websocket: WebSocket) -> None:
     await websocket.accept()
+
+    if not auth.is_authed(websocket):
+        await websocket.send_json({"type": "error", "message": "Not logged in."})
+        await websocket.close()
+        return
 
     if not state.try_acquire_broadcaster():
         await websocket.send_json({"type": "error", "message": "A broadcast is already in progress."})
